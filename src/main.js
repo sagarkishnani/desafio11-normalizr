@@ -33,25 +33,21 @@ const mensajesApi = new ContenedorArchivo(
 // NORMALIZACIÓN DE MENSAJES
 
 // Definimos un esquema de autor
-const authorSchema = new schema.Entity("authors");
+const schemaAuthor = new schema.Entity("authors", {}, { idAttribute: "email" });
 
 // Definimos un esquema de mensaje
-const messageSchema = new schema.Entity("messages");
+const schemaMensaje = new normalizr.schema.Entity(
+  "post",
+  { author: schemaAuthor },
+  { idAttribute: "email" }
+);
 
 // Definimos un esquema de posts
-const postSchema = new schema.Entity("posts", {
-  autor: authorSchema,
-  posts: [messageSchema],
-});
-
-// function print(objeto) {
-//   console.log(util.inspect(objeto, false, 12, true));
-// }
-
-// console.log("------------OBJETO NORMALIZADO-------");
-// const normalizedData = normalize(await mensajesApi.listarAll(), postSchema);
-// print(normalizedData);
-// console.log(JSON.stringify(normalizedData).length);
+const schemaMensajes = new normalizr.schema.Entity(
+  "posts",
+  { mensajes: [schemaMensaje] },
+  { idAttribute: "id" }
+);
 //--------------------------------------------
 // configuro el socket
 
@@ -60,7 +56,12 @@ io.on("connection", async (socket) => {
 
   // carga inicial de productos
 
-  // actualizacion de productos
+  // socket.on("update", (producto) => {
+  //   productosApi.guardar(producto);
+  //   io.sockets.emit("productos", await productosApi.listarAll())
+  // });
+  // // actualizacion de productos
+  // socket.emit("productos", await productosApi.listarMensajesNormalizados());
 
   // carga inicial de mensajes
   socket.on("nuevoMensaje", (mensaje) => {
@@ -68,12 +69,15 @@ io.on("connection", async (socket) => {
     io.sockets.emit("mensajes", listarMensajesNormalizados());
   });
   // actualizacion de mensajes
-  socket.emit("mensajes", await mensajesApi.listarAll());
+  socket.emit("mensajes", listarMensajesNormalizados());
 });
 
 async function listarMensajesNormalizados() {
-  const normalizedData = normalize(await mensajesApi.listarAll(), postSchema);
-  return normalizedData;
+  const normalizedData = normalize(
+    await mensajesApi.listarAll(),
+    schemaMensajes
+  );
+  return console.log(normalizedData);
 }
 
 //--------------------------------------------

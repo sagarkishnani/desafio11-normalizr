@@ -35,11 +35,21 @@ function makeHtmlTable(productos) {
 // MENSAJES
 
 /* --------------------- DESNORMALIZACIÓN DE MENSAJES ---------------------------- */
-// Definimos un esquema de autor
+const schemaAuthor = new schema.Entity("authors", {}, { idAttribute: "email" });
 
 // Definimos un esquema de mensaje
+const schemaMensaje = new normalizr.schema.Entity(
+  "post",
+  { author: schemaAuthor },
+  { idAttribute: "email" }
+);
 
 // Definimos un esquema de posts
+const schemaMensajes = new normalizr.schema.Entity(
+  "posts",
+  { mensajes: [schemaMensaje] },
+  { idAttribute: "id" }
+);
 
 /* ----------------------------------------------------------------------------- */
 
@@ -69,6 +79,19 @@ formPublicarMensaje.addEventListener("submit", (e) => {
 });
 
 socket.on("mensajes", (mensajesN) => {
+  const mensajesNsize = JSON.stringify(mensajesN).length;
+  console.log(mensajesN, mensajesNsize);
+
+  const mensajesD = normalizr.denormalize(
+    mensajesN.result,
+    schemaMensajes,
+    mensajesN.entities
+  );
+
+  const mensajesDsize = JSON.stringify(mensajesD).length;
+  console.log(mensajesD, mensajesDsize);
+
+  const porcentajeC = parseInt((mensajesNsize * 100) / mensajesDsize);
   console.log(`Porcentaje de compresión ${porcentajeC}%`);
   document.getElementById("compresion-info").innerText = porcentajeC;
 
