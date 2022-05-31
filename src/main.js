@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 
 import normalizr from "normalizr";
-import util from "util";
 const normalize = normalizr.normalize;
 const schema = normalizr.schema;
 
@@ -36,18 +35,22 @@ const mensajesApi = new ContenedorArchivo(
 const schemaAuthor = new schema.Entity("authors", {}, { idAttribute: "email" });
 
 // Definimos un esquema de mensaje
-const schemaMensaje = new normalizr.schema.Entity(
+const schemaMensaje = new schema.Entity(
   "post",
   { author: schemaAuthor },
-  { idAttribute: "email" }
+  { idAttribute: "id" }
 );
 
 // Definimos un esquema de posts
-const schemaMensajes = new normalizr.schema.Entity(
+const schemaMensajes = new schema.Entity(
   "posts",
   { mensajes: [schemaMensaje] },
   { idAttribute: "id" }
 );
+
+const normalizarMensajes = (mensajesConId) =>
+  normalize(mensajesConId, schemaMensajes);
+
 //--------------------------------------------
 // configuro el socket
 
@@ -56,28 +59,26 @@ io.on("connection", async (socket) => {
 
   // carga inicial de productos
 
-  // socket.on("update", (producto) => {
-  //   productosApi.guardar(producto);
-  //   io.sockets.emit("productos", await productosApi.listarAll())
-  // });
-  // // actualizacion de productos
-  // socket.emit("productos", await productosApi.listarMensajesNormalizados());
+  socket.on("update", async (producto) => {
+    productosApi.guardar(producto);
+    io.sockets.emit("productos", await productosApi.listarAll());
+  });
+  // actualizacion de productos
+  socket.emit("productos", await productosApi.listarAll());
 
   // carga inicial de mensajes
-  socket.on("nuevoMensaje", (mensaje) => {
-    mensajesApi.guardar(mensaje);
-    io.sockets.emit("mensajes", listarMensajesNormalizados());
+  socket.on("nuevoMensaje", async (mensaje) => {
+    await mensajesApi.guardar(mensaje);
+    io.sockets.emit("mensajes", await listarMensajesNormalizados());
   });
   // actualizacion de mensajes
-  socket.emit("mensajes", listarMensajesNormalizados());
+  socket.emit("mensajes", await listarMensajesNormalizados());
 });
 
 async function listarMensajesNormalizados() {
-  const normalizedData = normalize(
-    await mensajesApi.listarAll(),
-    schemaMensajes
-  );
-  return console.log(normalizedData);
+  const mensajes = await mensajesApi.listarAll();
+  const normalizedData = normalizarMensajes({ id: "mensajes", mensajes });
+  return normalizedData;
 }
 
 //--------------------------------------------

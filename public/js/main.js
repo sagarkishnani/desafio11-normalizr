@@ -35,13 +35,18 @@ function makeHtmlTable(productos) {
 // MENSAJES
 
 /* --------------------- DESNORMALIZACIÓN DE MENSAJES ---------------------------- */
-const schemaAuthor = new schema.Entity("authors", {}, { idAttribute: "email" });
+// Definimos un esquema de autor
+const schemaAuthor = new normalizr.schema.Entity(
+  "authors",
+  {},
+  { idAttribute: "email" }
+);
 
 // Definimos un esquema de mensaje
 const schemaMensaje = new normalizr.schema.Entity(
   "post",
   { author: schemaAuthor },
-  { idAttribute: "email" }
+  { idAttribute: "id" }
 );
 
 // Definimos un esquema de posts
